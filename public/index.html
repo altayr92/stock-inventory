@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Inventory</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 10px;
+        }
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 10px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .form-group input, .form-group button, .form-group select {
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        button {
+            margin-top: 20px;
+        }
+        .navigation-buttons {
+            display: flex;
+            justify-content: space-between;
+        }
+        .hidden {
+            display: none;
+        }
+        .exists {
+            color: red;
+        }
+        .quantity-controls {
+            display: flex;
+            align-items: center;
+        }
+        .quantity-controls button {
+            width: auto;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Stock Inventory</h1>
+        <div class="form-group">
+            <label for="storeName">Store Name:</label>
+            <select id="storeName" required>
+                <option value="">Select Store</option>
+                <option value="La défense">La défense</option>
+                <option value="Paris 16">Paris 16</option>
+                <option value="Paris 17">Paris 17</option>
+                <option value="Bagneux">Bagneux</option>
+                <option value="Paris 11">Paris 11</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="date">Date:</label>
+            <input type="date" id="date" required>
+        </div>
+        <div id="questionSection" class="form-group hidden">
+            <h2 id="productQuestion"></h2>
+            <div>
+                <label>Do you need this product?</label>
+                <button type="button" id="yesButton">Yes</button>
+                <button type="button" id="noButton">No</button>
+            </div>
+            <div id="quantitySection" class="hidden">
+                <div class="quantity-controls">
+                    <button type="button" id="decreaseQuantity">-</button>
+                    <span id="quantityDisplay"></span>
+                    <button type="button" id="increaseQuantity">+</button>
+                </div>
+            </div>
+            <div class="navigation-buttons">
+                <button type="button" id="prevButton">Previous</button>
+                <button type="button" id="nextButton">Next</button>
+            </div>
+        </div>
+        <button id="startButton">Start</button>
+        <button id="sendToCentralButton" class="hidden">Send to Central Kitchen</button>
+    </div>
+
+    <script>
+        const products = [
+            { name: "Shawarma bœuf", defaultQuantity: "9 kg" },
+            { name: "Shawarma poulet", defaultQuantity: "9 kg" },
+            { name: "Taouk", defaultQuantity: "9 kg" },
+            { name: "Kefta", defaultQuantity: "9 kg" },
+            { name: "Salade", defaultQuantity: "20 p" },
+            { name: "Tomate", defaultQuantity: "12 kg" },
+            { name: "Cornichon", defaultQuantity: "1 p" },
+            { name: "Persil salade /piece", defaultQuantity: "40 p" },
+            { name: "Tabouleh Tomato", defaultQuantity: "5 kg" },
+            { name: "Oignons", defaultQuantity: "25 kg" },
+            { name: "Hoummous", defaultQuantity: "9 kg" },
+            { name: "Moutabbal", defaultQuantity: "9 kg" },
+            { name: "Salade aubergine", defaultQuantity: "9 kg" },
+            { name: "Warak Inab", defaultQuantity: "9 kg" },
+            { name: "Labneh", defaultQuantity: "9 kg" },
+            { name: "Tzatziki", defaultQuantity: "9 kg" },
+            { name: "Chanklish vege", defaultQuantity: "0" },
+            { name: "Chanlish feta", defaultQuantity: "9 kg" },
+            { name: "Sambusik bœuf", defaultQuantity: "120" },
+            { name: "Sambusik fromage", defaultQuantity: "120" },
+            { name: "Sambusik poulet", defaultQuantity: "120" },
+            { name: "Kebbeh", defaultQuantity: "120" },
+            { name: "Rikakat fromage", defaultQuantity: "120" },
+            { name: "Falafel", defaultQuantity: "120" },
+            { name: "Fatayer épinard", defaultQuantity: "120" },
+            { name: "Sfiha Bœuf", defaultQuantity: "120" },
+            { name: "Sfiha Fromage", defaultQuantity: "120" },
+            { name: "Frites normal (KG)", defaultQuantity: "20 kg" },
+            { name: "Sweet Frites (KG)", defaultQuantity: "20 kg" },
+            { name: "Pain libanais", defaultQuantity: "40" },
+            { name: "Sauce à l'ail", defaultQuantity: "9 kg" },
+            { name: "Sauce tahina", defaultQuantity: "18 kg" },
+            { name: "Sauce Harissa", defaultQuantity: "5" },
+            { name: "Huile d'olive", defaultQuantity: "20 L" },
+            { name: "Huile Fryer", defaultQuantity: "20 L" },
+            { name: "Baklava", defaultQuantity: "5 kg" },
+            { name: "Namoura", defaultQuantity: "5 kg" },
+            { name: "Mouhalabieh", defaultQuantity: "5 kg" },
+            { name: "Hommos Peas", defaultQuantity: "5 box" }
+        ];
+
+        let currentProductIndex = 0;
+        let currentQuantity = 0;
+        const stockData = { products: [] };
+
+        const storeNameInput = document.getElementById('storeName');
+        const dateInput = document.getElementById('date');
+        const questionSection = document.getElementById('questionSection');
+        const productQuestion = document.getElementById('productQuestion');
+        const quantitySection = document.getElementById('quantitySection');
+        const quantityDisplay = document.getElementById('quantityDisplay');
+        const startButton = document.getElementById('startButton');
+        const sendToCentralButton = document.getElementById('sendToCentralButton');
+        const prevButton = document.getElementById('prevButton');
+        const nextButton = document.getElementById('nextButton');
+        const yesButton = document.getElementById('yesButton');
+        const noButton = document.getElementById('noButton');
+        const increaseQuantity = document.getElementById('increaseQuantity');
+        const decreaseQuantity = document.getElementById('decreaseQuantity');
+
+        dateInput.addEventListener('change', checkExistingOrder);
+
+        startButton.addEventListener('click', () => {
+            if (storeNameInput.value && dateInput.value) {
+                if (storeNameInput.classList.contains('exists')) {
+                    alert('Your store has already placed an order for this date.');
+                    return;
+                }
+                stockData.storeName = storeNameInput.value;
+                stockData.date = dateInput.value;
+                startButton.classList.add('hidden');
+                questionSection.classList.remove('hidden');
+                showProductQuestion();
+            } else {
+                alert('Please enter store name and date.');
+            }
+        });
+
+        yesButton.addEventListener('click', () => {
+            currentQuantity = parseInt(products[currentProductIndex].defaultQuantity);
+            quantityDisplay.textContent = currentQuantity + " kg";
+            quantitySection.classList.remove('hidden');
+        });
+
+        noButton.addEventListener('click', () => {
+            stockData.products[currentProductIndex] = { product: products[currentProductIndex].name, quantity: "0" };
+            nextProduct();
+        });
+
+        increaseQuantity.addEventListener('click', () => {
+            currentQuantity += parseInt(products[currentProductIndex].defaultQuantity);
+            quantityDisplay.textContent = currentQuantity + " kg";
+        });
+
+        decreaseQuantity.addEventListener('click', () => {
+            if (currentQuantity > 0) {
+                currentQuantity -= parseInt(products[currentProductIndex].defaultQuantity);
+                if (currentQuantity < 0) currentQuantity = 0;
+                quantityDisplay.textContent = currentQuantity + " kg";
+            }
+        });
+
+        nextButton.addEventListener('click', () => {
+            stockData.products[currentProductIndex] = { product: products[currentProductIndex].name, quantity: currentQuantity + " kg" };
+            nextProduct();
+        });
+
+        prevButton.addEventListener('click', () => {
+            currentProductIndex = Math.max(currentProductIndex - 1, 0);
+            showProductQuestion();
+        });
+
+        sendToCentralButton.addEventListener('click', () => {
+            sendToCentralKitchen(stockData);
+        });
+
+        function showProductQuestion() {
+            quantitySection.classList.add('hidden');
+            productQuestion.textContent = `Product ${currentProductIndex + 1}/${products.length}: ${products[currentProductIndex].name}`;
+        }
+
+        function nextProduct() {
+            currentProductIndex++;
+            if (currentProductIndex < products.length) {
+                showProductQuestion();
+            } else {
+                questionSection.classList.add('hidden');
+                sendToCentralButton.classList.remove('hidden');
+            }
+        }
+
+        function checkExistingOrder() {
+            if (!storeNameInput.value || !dateInput.value) return;
+
+            fetch(`http://localhost:3000/api/orders?date=${dateInput.value}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.storeOrders && data.storeOrders[storeNameInput.value]) {
+                        storeNameInput.classList.add('exists');
+                    } else {
+                        storeNameInput.classList.remove('exists');
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                });
+        }
+
+        function sendToCentralKitchen(stockData) {
+            fetch('http://localhost:3000/api/orders', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(stockData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message === 'Order already placed for this store on this date') {
+                    alert('Order already placed for this store on this date.');
+                } else {
+                    alert('Order sent to central kitchen!');
+                    // Reset for a new order
+                    location.reload();
+                }
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+        }
+    </script>
+</body>
+</html>
